@@ -1,0 +1,20 @@
+--- hid-input.c.orig	2017-10-12 16:30:24.725772184 +0200
++++ hid-input.c	2017-10-12 14:49:56.152150583 +0200
+@@ -941,16 +941,17 @@
+ 		case 0x086: map_key_clear(KEY_SHOP);	        break;
+ 		default:    goto ignore;
+ 		}
+ 		break;
+ 
+ 	case HID_UP_HPVENDOR2:
+ 		set_bit(EV_REP, input->evbit);
+ 		switch (usage->hid & HID_USAGE) {
++		case 0x001: map_key_clear(KEY_MICMUTE);		break;
+ 		case 0x003: map_key_clear(KEY_BRIGHTNESSDOWN);	break;
+ 		case 0x004: map_key_clear(KEY_BRIGHTNESSUP);	break;
+ 		default:    goto ignore;
+ 		}
+ 		break;
+ 
+ 	case HID_UP_MSVENDOR:
+ 		goto ignore;
