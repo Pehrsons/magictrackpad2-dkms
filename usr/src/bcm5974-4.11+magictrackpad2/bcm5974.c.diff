@@ -1,6 +1,11 @@
---- bcm5974.c	2016-01-11 00:01:32.000000000 +0100
-+++ bcm5974-magictrackpad2.c	2016-12-21 12:35:27.234998193 +0100
-@@ -16,6 +16,7 @@
+--- bcm5974.c.orig	2017-10-12 16:00:55.775412666 +0200
++++ bcm5974.c	2017-10-12 15:59:04.690512834 +0200
+@@ -11,16 +11,17 @@
+  * The BCM5974 driver is based on the appletouch driver:
+  * Copyright (C) 2001-2004 Greg Kroah-Hartman (greg@kroah.com)
+  * Copyright (C) 2005      Johannes Berg (johannes@sipsolutions.net)
+  * Copyright (C) 2005	   Stelian Pop (stelian@popies.net)
+  * Copyright (C) 2005	   Frank Arnold (frank@scirocco-5v-turbo.de)
   * Copyright (C) 2005	   Peter Osterlund (petero2@telia.com)
   * Copyright (C) 2005	   Michael Hanselmann (linux-kernel@hansmi.ch)
   * Copyright (C) 2006	   Nicolas Boichat (nicolas@boichat.ch)
@@ -8,7 +13,17 @@
   *
   * This program is free software; you can redistribute it and/or modify
   * it under the terms of the GNU General Public License as published by
-@@ -96,6 +97,8 @@
+  * the Free Software Foundation; either version 2 of the License, or
+  * (at your option) any later version.
+  *
+  * This program is distributed in the hope that it will be useful,
+  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+@@ -91,16 +92,18 @@
+ /* MacbookAir6,2 (unibody, June 2013) */
+ #define USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI	0x0290
+ #define USB_DEVICE_ID_APPLE_WELLSPRING8_ISO	0x0291
+ #define USB_DEVICE_ID_APPLE_WELLSPRING8_JIS	0x0292
+ /* MacbookPro12,1 (2015) */
  #define USB_DEVICE_ID_APPLE_WELLSPRING9_ANSI	0x0272
  #define USB_DEVICE_ID_APPLE_WELLSPRING9_ISO	0x0273
  #define USB_DEVICE_ID_APPLE_WELLSPRING9_JIS	0x0274
@@ -17,7 +32,17 @@
  
  #define BCM5974_DEVICE(prod) {					\
  	.match_flags = (USB_DEVICE_ID_MATCH_DEVICE |		\
-@@ -161,6 +164,8 @@ static const struct usb_device_id bcm597
+ 			USB_DEVICE_ID_MATCH_INT_CLASS |		\
+ 			USB_DEVICE_ID_MATCH_INT_PROTOCOL),	\
+ 	.idVendor = USB_VENDOR_ID_APPLE,			\
+ 	.idProduct = (prod),					\
+ 	.bInterfaceClass = USB_INTERFACE_CLASS_HID,		\
+@@ -156,16 +159,18 @@
+ 	/* MacbookAir6,2 */
+ 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI),
+ 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING8_ISO),
+ 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING8_JIS),
+ 	/* MacbookPro12,1 */
  	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING9_ANSI),
  	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING9_ISO),
  	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING9_JIS),
@@ -26,7 +51,17 @@
  	/* Terminating entry */
  	{}
  };
-@@ -190,7 +195,8 @@ enum tp_type {
+ MODULE_DEVICE_TABLE(usb, bcm5974_table);
+ 
+ MODULE_AUTHOR("Henrik Rydberg");
+ MODULE_DESCRIPTION("Apple USB BCM5974 multitouch driver");
+ MODULE_LICENSE("GPL");
+@@ -185,51 +190,57 @@
+ 	u8 rel_y;		/* relative y coordinate */
+ };
+ 
+ /* trackpad header types */
+ enum tp_type {
  	TYPE1,			/* plain trackpad */
  	TYPE2,			/* button integrated in trackpad */
  	TYPE3,			/* additional header fields since June 2013 */
@@ -36,7 +71,7 @@
  };
  
  /* trackpad finger data offsets, le16-aligned */
-@@ -198,12 +204,14 @@ enum tp_type {
+ #define HEADER_TYPE1		(13 * sizeof(__le16))
  #define HEADER_TYPE2		(15 * sizeof(__le16))
  #define HEADER_TYPE3		(19 * sizeof(__le16))
  #define HEADER_TYPE4		(23 * sizeof(__le16))
@@ -51,7 +86,9 @@
  
  /* list of device capability bits */
  #define HAS_INTEGRATED_BUTTON	1
-@@ -213,18 +221,21 @@ enum tp_type {
+ 
+ /* trackpad finger data block size */
+ #define FSIZE_TYPE1		(14 * sizeof(__le16))
  #define FSIZE_TYPE2		(14 * sizeof(__le16))
  #define FSIZE_TYPE3		(14 * sizeof(__le16))
  #define FSIZE_TYPE4		(15 * sizeof(__le16))
@@ -73,7 +110,17 @@
  
  /* Wellspring initialization constants */
  #define BCM5974_WELLSPRING_MODE_READ_REQUEST_ID		1
-@@ -247,6 +258,18 @@ struct tp_finger {
+ #define BCM5974_WELLSPRING_MODE_WRITE_REQUEST_ID	9
+ 
+ /* trackpad finger structure, le16-aligned */
+ struct tp_finger {
+ 	__le16 origin;		/* zero when switching track finger */
+@@ -242,16 +253,28 @@
+ 	__le16 orientation;	/* 16384 when point, else 15 bit angle */
+ 	__le16 touch_major;	/* touch area, major axis */
+ 	__le16 touch_minor;	/* touch area, minor axis */
+ 	__le16 unused[2];	/* zeros */
+ 	__le16 pressure;	/* pressure on forcetouch touchpad */
  	__le16 multi;		/* one finger: varies, more fingers: constant */
  } __attribute__((packed,aligned(2)));
  
@@ -92,7 +139,17 @@
  /* trackpad finger data size, empirically at least ten fingers */
  #define MAX_FINGERS		16
  #define MAX_FINGER_ORIENTATION	16384
-@@ -497,6 +520,19 @@ static const struct bcm5974_config bcm59
+ 
+ /* device-specific parameters */
+ struct bcm5974_param {
+ 	int snratio;		/* signal-to-noise ratio */
+ 	int min;		/* device minimum reading */
+@@ -492,16 +515,29 @@
+ 		0, sizeof(struct bt_data),
+ 		0x83, DATAFORMAT(TYPE4),
+ 		{ SN_PRESSURE, 0, 300 },
+ 		{ SN_WIDTH, 0, 2048 },
+ 		{ SN_COORD, -4828, 5345 },
  		{ SN_COORD, -203, 6803 },
  		{ SN_ORIENT, -MAX_FINGER_ORIENTATION, MAX_FINGER_ORIENTATION }
  	},
@@ -112,7 +169,17 @@
  	{}
  };
  
-@@ -540,8 +576,10 @@ static void setup_events_to_report(struc
+ /* return the device-specific configuration by device */
+ static const struct bcm5974_config *bcm5974_get_config(struct usb_device *udev)
+ {
+ 	u16 id = le16_to_cpu(udev->descriptor.idProduct);
+ 	const struct bcm5974_config *cfg;
+@@ -535,18 +571,20 @@
+ 	/* for synaptics only */
+ 	input_set_abs_params(input_dev, ABS_PRESSURE, 0, 256, 5, 0);
+ 	input_set_abs_params(input_dev, ABS_TOOL_WIDTH, 0, 16, 0, 0);
+ 
+ 	/* finger touch area */
  	set_abs(input_dev, ABS_MT_TOUCH_MAJOR, &cfg->w);
  	set_abs(input_dev, ABS_MT_TOUCH_MINOR, &cfg->w);
  	/* finger approach area */
@@ -125,7 +192,17 @@
  	/* finger orientation */
  	set_abs(input_dev, ABS_MT_ORIENTATION, &cfg->o);
  	/* finger position */
-@@ -596,6 +634,23 @@ static void report_finger_data(struct in
+ 	set_abs(input_dev, ABS_MT_POSITION_X, &cfg->x);
+ 	set_abs(input_dev, ABS_MT_POSITION_Y, &cfg->y);
+ 
+ 	__set_bit(EV_KEY, input_dev->evbit);
+ 	__set_bit(BTN_LEFT, input_dev->keybit);
+@@ -591,16 +629,33 @@
+ 	input_report_abs(input, ABS_MT_WIDTH_MINOR,
+ 			 raw2int(f->tool_minor) << 1);
+ 	input_report_abs(input, ABS_MT_ORIENTATION,
+ 			 MAX_FINGER_ORIENTATION - raw2int(f->orientation));
+ 	input_report_abs(input, ABS_MT_POSITION_X, pos->x);
  	input_report_abs(input, ABS_MT_POSITION_Y, pos->y);
  }
  
@@ -149,7 +226,17 @@
  static void report_synaptics_data(struct input_dev *input,
  				  const struct bcm5974_config *cfg,
  				  const struct tp_finger *f, int raw_n)
-@@ -615,11 +670,31 @@ static void report_synaptics_data(struct
+ {
+ 	int abs_p = 0, abs_w = 0;
+ 
+ 	if (raw_n) {
+ 		int p = raw2int(f->touch_major);
+@@ -610,47 +665,93 @@
+ 			abs_w = clamp_val(16 * w / cfg->w.max, 0, 15);
+ 		}
+ 	}
+ 
+ 	input_report_abs(input, ABS_PRESSURE, abs_p);
  	input_report_abs(input, ABS_TOOL_WIDTH, abs_w);
  }
  
@@ -181,7 +268,10 @@
  	struct input_dev *input = dev->input;
  	int raw_n, i, n = 0;
  
-@@ -630,22 +705,48 @@ static int report_tp_state(struct bcm597
+ 	if (size < c->tp_header || (size - c->tp_header) % c->tp_fsize != 0)
+ 		return -EIO;
+ 
+ 	raw_n = (size - c->tp_header) / c->tp_fsize;
  
  	for (i = 0; i < raw_n; i++) {
  		f = get_tp_finger(dev, i);
@@ -238,3 +328,8 @@
  
  	/* later types report button events via integrated button only */
  	if (c->caps & HAS_INTEGRATED_BUTTON) {
+ 		int ibt = raw2int(dev->tp_data[c->tp_button]);
+ 		input_report_key(input, BTN_LEFT, ibt);
+ 	}
+ 
+ 	input_sync(input);
