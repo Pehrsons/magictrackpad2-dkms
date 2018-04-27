@@ -3,7 +3,7 @@ magictrackpad2-dkms
 
 A DKMS module for patching the bcm5947 and hid drivers to support the Apple Magic Trackpad 2.
 
-Tested with Kernel 4.4.0-57-generic on Ubuntu 16.04 LTS.
+Tested with Kernel 4.15.0-20-generic on Ubuntu 18.04 LTS.
 
 How to install
 --------------

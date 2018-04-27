@@ -1,5 +1,5 @@
---- bcm5974.c.orig	2017-10-12 16:00:55.775412666 +0200
-+++ bcm5974.c	2017-10-12 15:59:04.690512834 +0200
+--- bcm5974.c.orig	2018-04-27 11:54:20.834526729 +0200
++++ bcm5974.c	2018-04-27 11:53:30.454278976 +0200
 @@ -11,16 +11,17 @@
   * The BCM5974 driver is based on the appletouch driver:
   * Copyright (C) 2001-2004 Greg Kroah-Hartman (greg@kroah.com)
